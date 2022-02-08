@@ -7,19 +7,10 @@ struct State {
     ecs: World,
 }
 
-impl State {
-    fn run_systems(&mut self) {
-        let mut lw = LeftWalker{};
-        lw.run_now(&self.ecs);
-        self.ecs.maintain();
-    }
-}
 
 impl GameState for State {
     fn tick(&mut self, ctx : &mut Rltk) {
         ctx.cls();
-
-        self.run_systems();
 
         player_input(self, ctx);
 
@@ -48,21 +39,6 @@ struct Renderable {
 #[derive(Component, Debug)]
 struct Player {}
 
-#[derive(Component)]
-struct LeftMover {}
-
-struct LeftWalker{}
-impl<'a> System<'a> for LeftWalker {
-    type SystemData = (ReadStorage<'a, LeftMover>,
-                       WriteStorage<'a, Position>);
-
-    fn run(&mut self, (lefty, mut pos) : Self::SystemData) {
-        for (_lefty, pos) in (&lefty, &mut pos).join() {
-            pos.x -= 1;
-            if pos.x < 0 { pos.x = 79; }
-        }
-    }
-}
 
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -97,7 +73,6 @@ fn main() -> rltk::BError {
     };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
-    gs.ecs.register::<LeftMover>();
     gs.ecs.register::<Player>();
 
     gs.ecs
@@ -110,19 +85,6 @@ fn main() -> rltk::BError {
         })
         .with(Player{})
         .build();
-
-    for i in 0..10 {
-        gs.ecs
-            .create_entity()
-            .with(Position { x: i * 7, y: 20 })
-            .with(Renderable {
-                glyph: rltk::to_cp437('@'),
-                fg: RGB::named(rltk::RED),
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(LeftMover{})
-            .build();
-    }
 
     rltk::main_loop(context, gs)
 }
